@@ -1,4 +1,6 @@
 #r "Microsoft.Azure.Documents.Client"
+#r "Newtonsoft.Json"
+using Newtonsoft.Json;
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 
@@ -8,7 +10,6 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
 {
     log.Info("C# HTTP trigger function processed a request.");
     
-    string backendfunction = System.Environment.GetEnvironmentVariable("backendfunction", EnvironmentVariableTarget.Process);
     string cosmosdbEndpoint= System.Environment.GetEnvironmentVariable("cosmosdbEndpoint", EnvironmentVariableTarget.Process); 
     string cosmosdbAccountKey= System.Environment.GetEnvironmentVariable("cosmosdbAccountKey", EnvironmentVariableTarget.Process); 
     string collectionID="usageCollection";
@@ -19,7 +20,7 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
     dynamic adata = await req.Content.ReadAsAsync<object>();
     string vstsAccount = adata?.vstsAccount;
     string TemplateName = adata?.TemplateName;
-    string ProjectName = adata?.TemplateName;
+    string ProjectName = adata?.ProjectName;
     string AzuresubscriptionID = adata?.AzuresubscriptionID;
     string AzuresubscriptionName = adata?.AzuresubscriptionName;
     string endUser = adata?.endUser;
@@ -57,20 +58,11 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
     await client
                 .CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, collectionID),item);
     
-    log.Info("backendfunctin: {vstsAccount}");
-    // parse query parameter
-    string name = req.GetQueryNameValuePairs()
-        .FirstOrDefault(q => string.Compare(q.Key, "name", true) == 0)
-        .Value;
+    var myObj = new {result = "OK"};
+    var json2Return = JsonConvert.SerializeObject(myObj);
 
-    if (name == null)
-    {
-        // Get request body
-        dynamic data = await req.Content.ReadAsAsync<object>();
-        name = data?.name;
-    }
- 
+
     return vstsAccount == null
-        ? req.CreateResponse(HttpStatusCode.BadRequest, "Please pass a name on the query string or in the request body")
-        : req.CreateResponse(HttpStatusCode.OK, "OK");
+        ? req.CreateResponse(HttpStatusCode.BadRequest, "Please pass a name in the request body")
+        : req.CreateResponse(HttpStatusCode.OK,json2Return);
 }
